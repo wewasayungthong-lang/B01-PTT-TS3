@@ -217,11 +217,6 @@ public class MainActivity extends AppCompatActivity {
      */
     private void openAccessibilitySettings() {
         try {
-            if (Build.VERSION.SDK_INT >= 33 && !PttAccessibilityHelper.isHyTalkPttServiceEnabled(this)) {
-                Toast.makeText(this, R.string.toast_restricted_settings_hint, Toast.LENGTH_LONG).show();
-                openAppRestrictedSettings();
-                return;
-            }
             Intent accessibilityIntent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             startActivity(accessibilityIntent);
             Log.d(TAG, "Opened Accessibility Settings");
@@ -233,6 +228,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void openAppRestrictedSettings() {
         try {
+            Toast.makeText(this, R.string.toast_restricted_settings_hint, Toast.LENGTH_LONG).show();
             Intent appDetailsIntent = new Intent(
                     Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                     Uri.fromParts("package", getPackageName(), null));
