@@ -35,6 +35,7 @@ Configure these steps **in this order**:
 1. Open **HyTalkPTT** from the launcher.
 2. Tap **Configure Accessibility** (first button on the main screen).
 3. In **Settings → Accessibility**, find **HyTalkPTT** and **enable** the service.
+   - **Android 13/14/15 + APK sideload:** if you see "restricted settings", open **App info** for HyTalkPTT, tap **menu (⋮)**, choose **Allow restricted settings**, then return to Accessibility and enable HyTalkPTT.
 
 Without this step, the app cannot receive global PTT key events.
 

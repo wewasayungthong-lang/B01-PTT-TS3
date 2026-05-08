@@ -4,6 +4,7 @@
     <string name="accessibility_description">HyTalk PTT automation service</string>
 
     <string name="main_btn_configure_accessibility">Configure accessibility</string>
+    <string name="main_btn_allow_restricted_settings">Allow restricted settings (Android 13+)</string>
     <string name="main_btn_configure_ptt_key">Configure PTT key</string>
     <string name="main_status_waiting_ptt">Waiting for PTT press…</string>
 
@@ -50,12 +51,13 @@
     <string name="ptt_key_event_format">%1$s  keyCode=%2$d (%3$s)  scanCode=%4$d</string>
 
     <string name="main_configure_programmable_keys">Configure programmable keys (Motorola)</string>
-    <string name="main_setup_instructions">Scroll screen…\n\nOther accessibility services may interfere with global key capture. For reliable PTT, enable only HyTalkPTT under Settings → Accessibility (turn off any others you do not need).\n\nTo use HyTalkPTT, do this in order:\n\n1) Accessibility: tap Configure accessibility — Settings → Accessibility → HyTalkPTT → enable the toggle\n2) Configure PTT key: tap Configure PTT key — press your PTT button; enable Bluetooth PTT, SPP, and/or BLE PTT-Z01 if needed, then Save settings\n3) Configure programmable keys (Motorola): Settings → Programmable keys → Select PTT Key app → HyTalkPTT</string>
+    <string name="main_setup_instructions">Scroll screen…\n\nOther accessibility services may interfere with global key capture. For reliable PTT, enable only HyTalkPTT under Settings → Accessibility (turn off any others you do not need).\n\nTo use HyTalkPTT, do this in order:\n\n1) Android 13/14/15 + APK install: tap Allow restricted settings, then in App info menu (⋮) enable restricted settings\n2) Accessibility: tap Configure accessibility — Settings → Accessibility → HyTalkPTT → enable the toggle\n3) Configure PTT key: tap Configure PTT key — press your PTT button; enable Bluetooth PTT, SPP, and/or BLE PTT-Z01 if needed, then Save settings\n4) Configure programmable keys (Motorola): Settings → Programmable keys → Select PTT Key app → HyTalkPTT</string>
 
     <string name="error_with_message">Error: %1$s</string>
     <string name="error_unknown">Unknown error</string>
     <string name="toast_failed_open_settings">Could not open Settings</string>
     <string name="toast_failed_open_accessibility_settings">Could not open Accessibility settings</string>
+    <string name="toast_restricted_settings_hint">Android 13+ may block enabling Accessibility for sideloaded apps. On the app info screen, open menu (⋮) and allow restricted settings, then return and enable HyTalkPTT in Accessibility.</string>
     <string name="toast_failed_open_ptt_key_settings">Could not open PTT key settings</string>
     <string name="toast_failed_launch_hytalk">Could not start HyTalk: %1$s</string>
     <string name="main_status_failed_launch_hytalk">Could not start HyTalk!\n%1$s</string>

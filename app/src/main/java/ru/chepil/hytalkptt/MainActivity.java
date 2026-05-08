@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
@@ -135,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
     private void setupSettingsButtons() {
         Button btnProgrammableKeys = (Button) findViewById(R.id.btn_programmable_keys);
         Button btnAccessibility = (Button) findViewById(R.id.btn_accessibility);
+        Button btnRestrictedSettings = (Button) findViewById(R.id.btn_restricted_settings);
         Button btnPttKey = (Button) findViewById(R.id.btn_ptt_key);
         
         // Show and configure buttons
@@ -156,6 +159,20 @@ public class MainActivity extends AppCompatActivity {
                     openAccessibilitySettings();
                 }
             });
+        }
+
+        if (btnRestrictedSettings != null) {
+            if (Build.VERSION.SDK_INT >= 33) {
+                btnRestrictedSettings.setVisibility(View.VISIBLE);
+                btnRestrictedSettings.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        openAppRestrictedSettings();
+                    }
+                });
+            } else {
+                btnRestrictedSettings.setVisibility(View.GONE);
+            }
         }
 
         if (btnPttKey != null) {
@@ -200,12 +217,30 @@ public class MainActivity extends AppCompatActivity {
      */
     private void openAccessibilitySettings() {
         try {
+            if (Build.VERSION.SDK_INT >= 33 && !PttAccessibilityHelper.isHyTalkPttServiceEnabled(this)) {
+                Toast.makeText(this, R.string.toast_restricted_settings_hint, Toast.LENGTH_LONG).show();
+                openAppRestrictedSettings();
+                return;
+            }
             Intent accessibilityIntent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
             startActivity(accessibilityIntent);
             Log.d(TAG, "Opened Accessibility Settings");
         } catch (Exception e) {
             Log.e(TAG, "Error opening Accessibility settings", e);
             Toast.makeText(this, R.string.toast_failed_open_accessibility_settings, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void openAppRestrictedSettings() {
+        try {
+            Intent appDetailsIntent = new Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", getPackageName(), null));
+            startActivity(appDetailsIntent);
+            Log.d(TAG, "Opened App info for restricted settings");
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening app details settings", e);
+            Toast.makeText(this, R.string.toast_failed_open_settings, Toast.LENGTH_SHORT).show();
         }
     }
 

@@ -23,6 +23,10 @@ updates:
       # Later versions may deprecate or remove support for older SDK levels
       - dependency-name: "com.android.tools.build:gradle"
         update-types: ["version-update:semver-major"]
+      # Keep Gradle wrapper on 8.x to stay compatible with pinned AGP/toolchain.
+      # Prevent PRs like gradle-wrapper 8.x -> 9.x.
+      - dependency-name: "gradle-wrapper"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
