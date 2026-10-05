@@ -94,7 +94,7 @@ public class PTTAccessibilityService extends AccessibilityService {
         return service.injectKeyEvent(keyCode, action);
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "PrivateApi"})
     private boolean injectKeyEvent(int keyCode, int action) {
         if (Build.VERSION.SDK_INT < 23) {
             return false;
