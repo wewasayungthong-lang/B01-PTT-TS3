@@ -29,6 +29,8 @@ final class BluetoothPttRoutingManager implements PttHyTalkActions.BluetoothDown
     private static final String TAG_PTT_TRACE = "HyTalkPTT-PTTTrace";
 
     private static final int REMAPPED_PTT_KEYCODE = 142;
+    // Blackview Xplore X1 hardware PTT is KEYCODE_F1 (131), which TS3 already accepts.
+    private static final int TS3_PTT_KEYCODE = 131;
 
     private static BluetoothPttRoutingManager sInstance;
 
@@ -605,27 +607,27 @@ final class BluetoothPttRoutingManager implements PttHyTalkActions.BluetoothDown
         }
     }
 
+    /**
+     * Direct TS3 mode for HFP vendor PTT devices such as Inrico B01.
+     *
+     * The B01 generates +XEVENT=TALK,1 on press and +XEVENT=TALK,0 on release.
+     * Do not route these events through the normal HyTalk broadcast path: that
+     * path launches HyTalk and broadcasts PTT_DOWN/PTT_UP.  Instead inject the
+     * same F1 key (KEYCODE 131) that the Xplore X1's physical PTT already sends.
+     */
     private void deliverVendorHeadsetPtt(boolean isDown) {
-        if (isDown) {
-            KeyEvent ev = new KeyEvent(
-                    SystemClock.uptimeMillis(),
-                    SystemClock.uptimeMillis(),
-                    KeyEvent.ACTION_DOWN,
-                    REMAPPED_PTT_KEYCODE,
-                    0);
-            PttHyTalkActions.handlePttKeyEvent(mApp, ev, false, this);
-            if (!mBluetoothPttDebounceSkippedFirstDown) {
-                startBluetoothPttHoldRepeat();
-            }
-        } else {
-            stopBluetoothPttHoldRepeat();
-            KeyEvent ev = new KeyEvent(
-                    SystemClock.uptimeMillis(),
-                    SystemClock.uptimeMillis(),
-                    KeyEvent.ACTION_UP,
-                    REMAPPED_PTT_KEYCODE,
-                    0);
-            PttHyTalkActions.handlePttKeyEvent(mApp, ev, false, this);
+        stopBluetoothPttHoldRepeat();
+
+        int action = isDown ? KeyEvent.ACTION_DOWN : KeyEvent.ACTION_UP;
+        pttTrace("B01/TS3 direct -> keyCode=" + TS3_PTT_KEYCODE
+                + " action=" + action);
+
+        boolean injected = PTTAccessibilityService.injectTs3KeyEvent(
+                TS3_PTT_KEYCODE, action);
+
+        if (!injected) {
+            Log.e(TAG, "B01/TS3: KEYCODE 131 injection failed. "
+                    + "Make sure PTT Accessibility Service is enabled.");
         }
     }
 

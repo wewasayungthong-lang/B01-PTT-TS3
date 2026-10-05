@@ -38,7 +38,6 @@ public class PTTAccessibilityService extends AccessibilityService {
         sInstanceRef = new WeakReference<PTTAccessibilityService>(this);
         BareMediaButtonPtt.resetState();
         Log.d(TAG, "PTT Accessibility Service connected");
-
         AccessibilityServiceInfo info = getServiceInfo();
         if (info != null) {
             info.flags |= AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS;
@@ -51,7 +50,6 @@ public class PTTAccessibilityService extends AccessibilityService {
             serviceInfo.notificationTimeout = 100;
             setServiceInfo(serviceInfo);
         }
-
         if (Build.VERSION.SDK_INT >= 23) {
             initInputManager();
         }
@@ -79,6 +77,21 @@ public class PTTAccessibilityService extends AccessibilityService {
             inputManager = null;
             injectInputEventMethod = null;
         }
+    }
+
+    /**
+     * Called by BluetoothPttRoutingManager for Inrico B01 -> TS3.
+     * Uses the same InputManager injection mechanism already present in this
+     * project, but exposes it through the live AccessibilityService instance.
+     */
+    static boolean injectTs3KeyEvent(int keyCode, int action) {
+        PTTAccessibilityService service =
+                sInstanceRef == null ? null : sInstanceRef.get();
+        if (service == null) {
+            Log.e(TAG, "TS3 injection failed: AccessibilityService instance is not active");
+            return false;
+        }
+        return service.injectKeyEvent(keyCode, action);
     }
 
     @SuppressWarnings("unused")
@@ -164,7 +177,6 @@ public class PTTAccessibilityService extends AccessibilityService {
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
         int keyCode = event.getKeyCode();
-
         int savedPttKey = PttPreferences.getPttKeyCode(this);
         if (keyCode == savedPttKey) {
             pttTrace("onKeyEvent SAVED_PTT_KEY key=" + keyCode + " act=" + event.getAction()
@@ -173,7 +185,6 @@ public class PTTAccessibilityService extends AccessibilityService {
                     + " btSrc=" + PttPreferences.isPttBluetoothSourceEnabled(this)
                     + " willHandle=" + isConfiguredPttKey(keyCode));
         }
-
         if (PttKeySetupActivity.isSetupScreenVisible()
                 && BluetoothPttRoutingManager.isBluetoothHeadsetMediaKey(keyCode)) {
             PttKeySetupActivity.onMediaButtonKey(getApplicationContext(), event);
@@ -184,7 +195,6 @@ public class PTTAccessibilityService extends AccessibilityService {
                 && BluetoothPttRoutingManager.isBluetoothHeadsetMediaKey(keyCode)) {
             BluetoothHeadsetProbeLog.logKeyEvent("Accessibility-onKeyEvent", event);
         }
-
         if (BluetoothPttRoutingManager.tryConsumeAccessibilityToggleLatch(this, event)) {
             return true;
         }
