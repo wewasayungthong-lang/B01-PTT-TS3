@@ -2,7 +2,9 @@ package ru.chepil.hytalkptt;
 
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
@@ -22,6 +24,15 @@ public class PTTAccessibilityService extends AccessibilityService {
 
     private Object inputManager = null;
     private Method injectInputEventMethod = null;
+
+    // Dedicated receiver kept alive by the AccessibilityService. This avoids depending on
+    // the Bluetooth routing manager/media-session lifecycle for Inrico B01 HFP vendor PTT.
+    private BroadcastReceiver mB01VendorPttReceiver;
+    private boolean mB01VendorPttReceiverRegistered;
+    private static final String B01_VENDOR_CATEGORY =
+            "android.bluetooth.headset.intent.category.companyid.85";
+    private static final String BLUETOOTH_PERMISSION = "android.permission.BLUETOOTH";
+    private static final int RECEIVER_EXPORTED_FLAG = 2;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
@@ -57,6 +68,78 @@ public class PTTAccessibilityService extends AccessibilityService {
         BluetoothPttCoordinator.syncRouting(getApplicationContext());
         BluetoothPttRoutingManager.attachHost(this);
         BlePttZ01Controller.attachHost(this);
+        registerB01VendorPttReceiver();
+    }
+
+    private void registerB01VendorPttReceiver() {
+        if (mB01VendorPttReceiverRegistered) {
+            return;
+        }
+        mB01VendorPttReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, android.content.Intent intent) {
+                if (intent == null
+                        || !android.bluetooth.BluetoothHeadset.ACTION_VENDOR_SPECIFIC_HEADSET_EVENT
+                                .equals(intent.getAction())
+                        || !intent.hasCategory(B01_VENDOR_CATEGORY)) {
+                    return;
+                }
+                Boolean pressed = VendorHeadsetPttIntentParser.resolvePressRelease(intent);
+                if (pressed == null) {
+                    return;
+                }
+                if (PttKeySetupActivity.isSetupScreenVisible()) {
+                    Log.i(TAG_PTT_TRACE, "B01 vendor PTT seen while setup screen is visible: "
+                            + (pressed.booleanValue() ? "DOWN" : "UP"));
+                    return;
+                }
+                int action = pressed.booleanValue() ? KeyEvent.ACTION_DOWN : KeyEvent.ACTION_UP;
+                Log.i(TAG_PTT_TRACE, "B01/TS3 receiver -> keyCode=131 action=" + action);
+                boolean ok = injectTs3KeyEvent(131, action);
+                if (!ok) {
+                    Log.e(TAG, "B01/TS3 receiver: KEYCODE 131 injection failed");
+                }
+            }
+        };
+        IntentFilter filter = new IntentFilter(
+                android.bluetooth.BluetoothHeadset.ACTION_VENDOR_SPECIFIC_HEADSET_EVENT);
+        filter.addCategory(B01_VENDOR_CATEGORY);
+        try {
+            if (Build.VERSION.SDK_INT >= 33) {
+                java.lang.reflect.Method m = Context.class.getMethod(
+                        "registerReceiver", BroadcastReceiver.class, IntentFilter.class,
+                        String.class, android.os.Handler.class, int.class);
+                m.invoke(this, mB01VendorPttReceiver, filter, BLUETOOTH_PERMISSION, null,
+                        Integer.valueOf(RECEIVER_EXPORTED_FLAG));
+            } else if (Build.VERSION.SDK_INT <= 23) {
+                registerReceiver(mB01VendorPttReceiver, filter);
+            } else {
+                registerReceiver(mB01VendorPttReceiver, filter, BLUETOOTH_PERMISSION, null);
+            }
+            mB01VendorPttReceiverRegistered = true;
+            Log.d(TAG, "B01/TS3 vendor receiver registered");
+        } catch (Exception e) {
+            Log.e(TAG, "B01/TS3 vendor receiver registration failed", e);
+            try {
+                registerReceiver(mB01VendorPttReceiver,
+                        new IntentFilter(android.bluetooth.BluetoothHeadset.ACTION_VENDOR_SPECIFIC_HEADSET_EVENT));
+                mB01VendorPttReceiverRegistered = true;
+                Log.d(TAG, "B01/TS3 vendor receiver registered with action-only fallback");
+            } catch (Exception fallback) {
+                Log.e(TAG, "B01/TS3 vendor receiver fallback failed", fallback);
+            }
+        }
+    }
+
+    private void unregisterB01VendorPttReceiver() {
+        if (!mB01VendorPttReceiverRegistered || mB01VendorPttReceiver == null) {
+            return;
+        }
+        try {
+            unregisterReceiver(mB01VendorPttReceiver);
+        } catch (Exception ignored) {
+        }
+        mB01VendorPttReceiverRegistered = false;
     }
 
     private void initInputManager() {
@@ -209,6 +292,7 @@ public class PTTAccessibilityService extends AccessibilityService {
 
     @Override
     public void onDestroy() {
+        unregisterB01VendorPttReceiver();
         BlePttZ01Controller.detachHost(this);
         BluetoothPttRoutingManager.detachHost(this);
         PttHyTalkActions.clearCachedBroadcastPackage();
