@@ -238,7 +238,10 @@ final class BluetoothPttRoutingManager implements PttHyTalkActions.BluetoothDown
         if (!PttPreferences.isPttBluetoothSourceEnabled(mgr.mApp)) {
             return;
         }
-        mgr.deliverVendorHeadsetPtt(parsed.booleanValue());
+        // Inrico B01 HFP vendor events are handled by the dedicated receiver in
+        // PTTAccessibilityService so the path remains alive while TS3 is foreground.
+        Log.i(TAG_PTT_TRACE, "B01 vendor event received by routing manager; TS3 service receiver handles it: "
+                + (parsed.booleanValue() ? "DOWN" : "UP"));
     }
 
     static void pauseBluetoothMediaForKeyLearning() {
@@ -614,6 +617,14 @@ final class BluetoothPttRoutingManager implements PttHyTalkActions.BluetoothDown
      * Do not route these events through the normal HyTalk broadcast path: that
      * path launches HyTalk and broadcasts PTT_DOWN/PTT_UP.  Instead inject the
      * same F1 key (KEYCODE 131) that the Xplore X1's physical PTT already sends.
+     */
+    /**
+     * Direct TS3 mode for HFP vendor PTT devices such as Inrico B01.
+     *
+     * B01 produces +XEVENT=TALK,1 on press and +XEVENT=TALK,0 on release.
+     * The normal HyTalk broadcast path is intentionally bypassed here because
+     * the target is TS3, not HyTalk. The Xplore X1 hardware PTT already proves
+     * that KEYCODE_F1 (131) is accepted by TS3.
      */
     private void deliverVendorHeadsetPtt(boolean isDown) {
         stopBluetoothPttHoldRepeat();
