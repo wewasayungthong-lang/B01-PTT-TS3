@@ -238,10 +238,12 @@ final class BluetoothPttRoutingManager implements PttHyTalkActions.BluetoothDown
         if (!PttPreferences.isPttBluetoothSourceEnabled(mgr.mApp)) {
             return;
         }
-        // Inrico B01 HFP vendor events are handled by the dedicated receiver in
-        // PTTAccessibilityService so the path remains alive while TS3 is foreground.
-        Log.i(TAG_PTT_TRACE, "B01 vendor event received by routing manager; TS3 service receiver handles it: "
+        // Inrico B01 HFP vendor events arrive here through the existing
+        // BluetoothPttRoutingManager receiver. Deliver the parsed edge directly
+        // to the TS3 F1 injection path.
+        Log.i(TAG_PTT_TRACE, "B01 vendor event -> TS3 direct: "
                 + (parsed.booleanValue() ? "DOWN" : "UP"));
+        mgr.deliverVendorHeadsetPtt(parsed.booleanValue());
     }
 
     static void pauseBluetoothMediaForKeyLearning() {
